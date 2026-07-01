@@ -188,6 +188,8 @@
     font-size:10px;font-weight:700;letter-spacing:.04em;
     padding:3px 8px;border-radius:999px;
     text-transform:uppercase;pointer-events:none;
+    .gmeta-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;}
+.gmeta-row .gavail{margin:0;}
   }
   /* badge on detail page */
   .detail-badge{
@@ -1063,9 +1065,11 @@ function bookCardHtml(b){
       <div class="gbody">
         <p class="gname">${b.name}</p>
         <p class="gauthor">${b.author}</p>
-        <p class="gavail ${inStock?'yes':'no'}">${inStock?'В наявності':'Немає в наявності'}</p>
-        ${b.badge?`<span class="gbadge">${b.badge}</span>`:''}
-        <div class="grow">
+        <div class="gmeta-row">
+  <p class="gavail ${inStock?'yes':'no'}">${inStock?'В наявності':'Немає в наявності'}</p>
+  ${b.badge?`<span class="gbadge">${b.badge}</span>`:''}
+</div>
+<div class="grow">
           <span>
             ${b.oldPrice?`<span class="old-price">${b.oldPrice} ₴</span>`:''}
             <span class="gprice ${b.oldPrice?'sale':''}">${b.price} ₴</span>
