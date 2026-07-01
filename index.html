@@ -607,15 +607,6 @@ function npSelectBranch(num, addr, type){
 ══════════════════════════════════════════ */
 const API_URL = "https://script.google.com/macros/s/AKfycbyeRKuwYBjKE4j0ycBKXEG3AtdAqMFQymBOG5gmgN0QtuJYrUT3FEMx9UTbd7LKaNvS/exec";
 
-const FALLBACK_BOOKS = [
-  {id:"1",name:"Усі твої досконалості",author:"Колін Гувер",price:420,oldPrice:"",category:"Романи",cover:"",badge:"Бестселер",description:"Зворушлива історія про кохання, біль та шанс почати спочатку."},
-  {id:"2",name:"Мій земний принц",author:"Паркер С. Таннінгтон",price:450,oldPrice:"",category:"Романи",cover:"",badge:"",description:"Романтична казка про принца, який шукає справжнє кохання серед людей."},
-  {id:"3",name:"Світанок Малібу",author:"Тейлор Дженкінс Рід",price:360,oldPrice:"450",category:"Знижки",cover:"",badge:"−20%",description:"Один день з життя родини, що змінить усе назавжди."},
-  {id:"4",name:"Безнадія",author:"Колін Гувер",price:410,oldPrice:"",category:"Романи",cover:"",badge:"",description:"Історія про темне минуле, яке наздоганяє у найнесподіваніший момент."},
-  {id:"5",name:"Внутрішня інженерія",author:"Садхгуру",price:480,oldPrice:"",category:"Нонфікшн",cover:"",badge:"",description:"Практичний посібник з усвідомленості та внутрішньої гармонії."},
-  {id:"6",name:"Цей чарівний світ казок",author:"Збірка",price:310,oldPrice:"390",category:"Дитячі",cover:"",badge:"",description:"Збірка добрих казок для читання перед сном."},
-];
-
 let BOOKS = [];
 let cart = JSON.parse(localStorage.getItem("bookstore_cart")||"{}");
 let activeCategory = "Усі";
