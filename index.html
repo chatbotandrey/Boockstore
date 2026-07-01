@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Книгарня · Mini App</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --paper:#f6efe2;
+    --paper-2:#efe4d0;
+    --ink:#241c14;
+    --wine:#7a2630;
+    --wine-deep:#591b22;
+    --gold:#b08d4f;
+    --line:#ddccaa;
+    --muted:#8a7d63;
+    --ok:#3f5e3a;
+
+    /* customizable accent colors (overridable via Налаштування) */
+    --c-header-bg:#7a2630;
+    --c-header-text:#f6efe2;
+    --c-chip-active:#7a2630;
+    --c-price:#7a2630;
+    --c-sale-price:#c0392b;
+    --c-oldprice:#8a7d63;
+    --c-badge-bg:#7a2630;
+    --c-badge-text:#ffffff;
+    --c-addbtn-bg:#7a2630;
+    --c-addbtn-text:#ffffff;
+    --c-heart:#7a2630;
+    --c-heart-off:#c9bfa8;
+    --c-instock:#3f5e3a;
+    --c-outstock:#a33b3b;
+    --c-cardbg:#ffffff;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:#d8cdb4;}
+  body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;justify-content:center;}
+  button{font-family:inherit;}
+
+  /* ── FRAME ── */
+  .frame{
+    width:100%;max-width:480px;min-height:100vh;
+    background:var(--paper);position:relative;
+    display:flex;flex-direction:column;
+  }
+  .screen{display:none;flex:1;flex-direction:column;min-height:0;}
+  .screen.active{display:flex;}
+
+  /* ── HEADER ── */
+  .header{padding:18px 20px 22px;background:var(--c-header-bg);color:var(--c-header-text);position:relative;flex-shrink:0;}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;margin:0 0 6px;}
+  .store-title{font-family:'Fraunces',serif;font-weight:600;font-size:24px;margin:0 0 4px;letter-spacing:-0.01em;}
+  .store-sub{font-size:12.5px;opacity:.8;margin:0;}
+
+  /* ── BACK ROW ── */
+  .back-row{display:flex;align-items:center;gap:8px;}
+  .back-btn{
+    background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.25);
+    height:32px;border-radius:999px;display:flex;align-items:center;
+    justify-content:center;cursor:pointer;color:var(--paper);
+    padding:0 12px;gap:5px;font-size:13px;font-weight:500;white-space:nowrap;
+    flex-shrink:0;
+  }
+  .back-btn.dark{
+    background:rgba(0,0,0,0.06);border-color:var(--line);color:var(--ink);
+  }
+  .cart-pill{
+    position:absolute;top:18px;right:20px;
+    background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.25);
+    border-radius:999px;padding:7px 12px;font-size:13px;
+    display:flex;align-items:center;gap:6px;cursor:pointer;
+  }
+  .cart-pill svg{width:14px;height:14px;}
+
+  /* ── SEARCH & CHIPS ── */
+  .search-wrap{padding:14px 20px 0;flex-shrink:0;}
+  .search{
+    background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:11px 14px;display:flex;align-items:center;gap:8px;
+  }
+  .search input{border:none;outline:none;font-size:14px;font-family:inherit;color:var(--ink);width:100%;background:transparent;}
+  .search svg{width:16px;height:16px;flex-shrink:0;opacity:.6;}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:12px 20px 4px;scrollbar-width:none;flex-shrink:0;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{flex:none;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:500;background:var(--paper-2);border:1px solid var(--line);color:var(--ink);white-space:nowrap;cursor:pointer;}
+  .chip.active{background:var(--c-chip-active);color:var(--paper);border-color:var(--c-chip-active);}
+
+  /* ── FILTER BUTTON & PANEL ── */
+  .filter-btn{
+    flex-shrink:0;width:40px;height:40px;border-radius:12px;
+    background:#fff;border:1px solid var(--line);display:flex;
+    align-items:center;justify-content:center;cursor:pointer;position:relative;
+  }
+  .filter-btn svg{width:17px;height:17px;opacity:.75;}
+  .filter-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--c-header-bg);display:none;}
+  .search-row{display:flex;gap:10px;align-items:center;}
+  .search-row .search{flex:1;}
+
+  .filter-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;
+    display:none;align-items:flex-end;justify-content:center;
+  }
+  .filter-overlay.show{display:flex;}
+  .filter-panel{
+    background:var(--paper);width:100%;max-width:480px;max-height:85vh;
+    border-radius:18px 18px 0 0;overflow-y:auto;padding:0 0 18px;
+  }
+  .filter-head{
+    position:sticky;top:0;background:var(--paper);padding:16px 20px 12px;
+    border-bottom:1px solid var(--line);display:flex;align-items:center;
+    justify-content:space-between;
+  }
+  .filter-head h3{font-family:'Fraunces',serif;font-size:17px;margin:0;}
+  .filter-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);}
+  .filter-body{padding:14px 20px 0;}
+  .filter-group{margin-bottom:18px;}
+  .filter-group-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:0 0 8px;}
+  .filter-opts{display:flex;flex-wrap:wrap;gap:8px;}
+  .filter-opt{padding:7px 13px;border-radius:999px;font-size:12.5px;font-weight:500;background:#fff;border:1px solid var(--line);color:var(--ink);cursor:pointer;white-space:nowrap;}
+  .filter-opt.active{background:var(--c-chip-active);color:#fff;border-color:var(--c-chip-active);}
+  .price-range-row{display:flex;align-items:center;gap:10px;}
+  .price-range-row input{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:13px;font-family:inherit;background:#fff;outline:none;}
+  .price-range-row input:focus{border-color:var(--c-chip-active);}
+  .filter-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;}
+  .filter-toggle-row .rlabel{font-size:13.5px;font-weight:500;}
+  .switch{position:relative;width:42px;height:24px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch-slider{position:absolute;inset:0;background:var(--line);border-radius:999px;cursor:pointer;transition:.15s;}
+  .switch-slider::before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+  .switch input:checked + .switch-slider{background:var(--c-chip-active);}
+  .switch input:checked + .switch-slider::before{transform:translateX(18px);}
+  .filter-footer{position:sticky;bottom:0;background:var(--paper);padding:14px 20px 4px;display:flex;gap:10px;border-top:1px solid var(--line);}
+  .filter-footer .btn-reset{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--ink);}
+  .filter-footer .btn-apply{flex:2;background:var(--c-chip-active);color:#fff;border:none;border-radius:12px;padding:13px;font-size:13.5px;font-weight:600;cursor:pointer;}
+
+  .section-label{display:flex;align-items:baseline;justify-content:space-between;padding:18px 20px 10px;flex-shrink:0;}
+  .section-label h2{font-family:'Fraunces',serif;font-size:17px;font-weight:600;margin:0;}
+  .section-label span{font-size:12px;color:var(--wine);font-weight:600;}
+
+  /* ── SCROLL AREA ── */
+  .scroll-area{flex:1;overflow-y:auto;min-height:0;}
+
+  /* ── CATALOG GRID ── */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 20px 20px;}
+  .gcard{background:var(--c-cardbg);border-radius:14px;border:1px solid var(--line);overflow:hidden;cursor:pointer;transition:box-shadow .15s;}
+  .gcard:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);}
+  .gcover{height:150px;width:100%;object-fit:cover;background:var(--paper-2);display:block;}
+  .gcover-fallback{height:150px;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;background:linear-gradient(160deg,#7a2630,#591b22);}
+  .cover-title{font-family:'Fraunces',serif;font-weight:600;font-size:12px;line-height:1.3;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.25);}
+  .gbody{padding:10px 12px 12px;}
+  .gname{font-size:12.5px;font-weight:600;margin:0 0 4px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .gauthor{font-size:11px;color:var(--muted);margin:0 0 6px;}
+  .gavail{font-size:10.5px;font-weight:600;margin:0 0 8px;display:flex;align-items:center;gap:4px;}
+  .gavail.yes{color:var(--c-instock);}
+  .gavail.no{color:var(--c-outstock);}
+  .gavail::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+  .grow{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+  .gprice{font-size:13.5px;font-weight:700;color:var(--c-price);}
+  .gprice.sale{color:var(--c-sale-price);}
+  .old-price{font-size:10.5px;color:var(--c-oldprice);text-decoration:line-through;margin-right:4px;}
+  .addbtn{
+    border-radius:999px;background:var(--c-addbtn-bg);color:var(--c-addbtn-text);
+    border:none;font-size:11.5px;font-weight:600;line-height:1;
+    padding:8px 12px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;flex-shrink:0;white-space:nowrap;
+  }
+  .empty-state{padding:60px 30px;text-align:center;color:var(--muted);font-size:13.5px;grid-column:1/-1;}
+
+  /* ── BADGE ── */
+  .gcard-img{position:relative;}
+  .gbadge{
+    position:absolute;top:8px;left:8px;
+    background:var(--c-badge-bg);color:var(--c-badge-text);
+    font-size:10px;font-weight:700;letter-spacing:.04em;
+    padding:3px 8px;border-radius:999px;
+    text-transform:uppercase;pointer-events:none;
+    box-shadow:0 2px 6px rgba(0,0,0,.2);
+  }
+  /* badge on detail page */
+  .detail-badge{
+    display:inline-block;
+    background:var(--c-badge-bg);color:var(--c-badge-text);
+    font-size:11px;font-weight:700;letter-spacing:.05em;
+    padding:4px 10px;border-radius:999px;
+    text-transform:uppercase;margin-bottom:10px;
+  }
+
+  /* ── HEART / FAVORITE ── */
+  .heart-btn{
+    position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;
+    background:rgba(255,255,255,.85);backdrop-filter:blur(2px);
+    border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,.15);z-index:2;
+  }
+  .heart-btn svg{width:16px;height:16px;stroke:var(--c-heart);fill:none;transition:fill .15s,stroke .15s;}
+  .heart-btn.active svg{fill:var(--c-heart);stroke:var(--c-heart);}
+  .heart-btn:not(.active) svg{stroke:var(--c-heart-off);}
+  .detail-heart-btn{
+    width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+  }
+  .detail-heart-btn svg{width:18px;height:18px;stroke:var(--c-heart);fill:none;transition:fill .15s;}
+  .detail-heart-btn.active svg{fill:var(--c-heart);}
+  .detail-avail{font-size:12.5px;font-weight:600;margin:0 0 14px;display:flex;align-items:center;gap:5px;}
+  .detail-avail::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;}
+  .detail-avail.yes{color:var(--c-instock);}
+  .detail-avail.no{color:var(--c-outstock);}
+
+  /* ── DETAIL PAGE ── */
+  #screen-detail{overflow-y:auto;}
+  .detail-back-bar{
+    padding:14px 20px;position:sticky;top:0;z-index:10;
+    background:var(--paper);border-bottom:1px solid var(--line);
+  }
+  .detail-img-wrap{width:100%;background:var(--paper-2);overflow:hidden;}
+  .detail-cover{width:100%;max-height:340px;object-fit:contain;display:block;background:var(--paper-2);}
+  .detail-cover-fallback{
+    width:100%;height:260px;display:flex;align-items:center;
+    justify-content:center;background:linear-gradient(160deg,#7a2630,#591b22);
+  }
+  .detail-cover-fallback .cover-title{font-size:20px;}
+  .detail-body{padding:20px 20px 32px;}
+  .detail-title{font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin:0 0 4px;}
+  .detail-author{font-size:13.5px;color:var(--muted);margin:0 0 14px;}
+  .detail-price-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+  .detail-price{font-size:24px;font-weight:700;color:var(--c-price);}
+  .detail-price.sale{color:var(--c-sale-price);}
+  .detail-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .detail-desc{font-size:13.5px;line-height:1.65;color:#4a4030;margin-bottom:22px;}
+  .qty-row{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+  .qty-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:18px;cursor:pointer;}
+  .qty-val{font-size:16px;font-weight:600;min-width:24px;text-align:center;}
+  .qty-unit{font-size:12px;font-weight:400;color:var(--muted);margin-left:2px;}
+  .primary-btn{width:100%;background:var(--wine);color:#fff;border:none;border-radius:12px;padding:15px;font-size:14.5px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+  .primary-btn:hover{opacity:.9;}
+  .primary-btn:disabled{opacity:.5;}
+
+  /* ── CART ── */
+  .cart-item{display:flex;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);}
+  .cart-thumb{width:56px;height:78px;border-radius:8px;object-fit:cover;flex-shrink:0;}
+  .cart-item-fallback{width:56px;height:78px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#7a2630,#591b22);flex-shrink:0;}
+  .cart-item-fallback span{font-size:9px;color:#fff;text-align:center;padding:4px;}
+  .ci-info{flex:1;min-width:0;}
+  .ci-name{font-size:13px;font-weight:600;margin:0 0 2px;}
+  .ci-author{font-size:11px;color:var(--muted);margin:0 0 8px;}
+  .ci-row{display:flex;align-items:center;justify-content:space-between;}
+  .ci-qty{display:flex;align-items:center;gap:8px;}
+  .ci-qty button{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:14px;}
+  .ci-price{font-size:13px;font-weight:700;color:var(--wine);}
+  .ci-remove{font-size:11px;color:var(--muted);text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;margin-top:6px;}
+
+  .cart-footer{padding:16px 20px 22px;border-top:1px solid var(--line);background:var(--paper);flex-shrink:0;}
+  .total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .total-row span:first-child{font-size:13px;color:var(--muted);}
+  .total-row span:last-child{font-size:19px;font-weight:700;}
+
+  /* ── CHECKOUT FORM ── */
+  .form-wrap{padding:18px 20px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
+  .field input{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px 13px;font-size:14px;font-family:inherit;background:#fff;outline:none;transition:border-color .15s;}
+  .field input:focus{border-color:var(--wine);}
+  .radio-group{display:flex;flex-direction:column;gap:8px;}
+  .radio-opt{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:12px 13px;cursor:pointer;transition:all .15s;}
+  .radio-opt.checked{border-color:var(--wine);background:#fdf6ee;}
+  .radio-opt input{margin:0;accent-color:var(--wine);}
+  .radio-opt .rlabel{font-size:13.5px;font-weight:500;}
+
+  /* ── NOVA POSHTA SELECTOR ── */
+  .np-wrap{position:relative;}
+  .np-search-input{
+    width:100%;border:1px solid var(--line);border-radius:10px;
+    padding:12px 13px;font-size:14px;font-family:inherit;
+    background:#fff;outline:none;transition:border-color .15s;
+  }
+  .np-search-input:focus{border-color:var(--wine);}
+  .np-dropdown{
+    position:absolute;top:calc(100% + 4px);left:0;right:0;
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:100;overflow:hidden;
+    max-height:220px;overflow-y:auto;
+  }
+  .np-dropdown-item{
+    padding:11px 14px;font-size:13.5px;cursor:pointer;
+    border-bottom:1px solid var(--line);transition:background .12s;
+  }
+  .np-dropdown-item:last-child{border-bottom:none;}
+  .np-dropdown-item:hover{background:var(--paper-2);}
+  .np-dropdown-item b{color:var(--wine);}
+  .np-selected-tag{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--paper-2);border:1px solid var(--line);border-radius:10px;
+    padding:10px 13px;font-size:13.5px;font-weight:500;
+  }
+  .np-tag-clear{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;line-height:1;}
+  .np-type-toggle{display:flex;gap:8px;margin-top:10px;}
+  .np-type-btn{
+    flex:1;padding:9px;border-radius:9px;border:1px solid var(--line);
+    background:#fff;font-size:13px;font-weight:600;cursor:pointer;
+    color:var(--muted);transition:all .15s;
+  }
+  .np-type-btn.active{background:var(--wine);color:#fff;border-color:var(--wine);}
+  .np-branch-list{margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;max-height:220px;overflow-y:auto;}
+  .np-branch-item{
+    padding:11px 14px;font-size:13px;border-bottom:1px solid var(--line);
+    cursor:pointer;transition:background .12s;display:flex;flex-direction:column;gap:2px;
+  }
+  .np-branch-item:last-child{border-bottom:none;}
+  .np-branch-item:hover{background:var(--paper-2);}
+  .np-branch-item.selected{background:#fdf6ee;}
+  .np-branch-num{font-weight:700;color:var(--wine);}
+  .np-branch-addr{color:var(--muted);font-size:12px;}
+  .np-final{
+    margin-top:10px;padding:11px 14px;border-radius:10px;
+    background:#f0faf0;border:1px solid #b8ddb8;
+    font-size:13px;color:#2d5a2d;font-weight:500;
+    display:flex;align-items:flex-start;gap:8px;
+  }
+  .np-final svg{flex-shrink:0;margin-top:1px;}
+
+  /* ── SUCCESS ── */
+  .success-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;}
+  .success-icon{width:68px;height:68px;border-radius:50%;background:var(--ok);display:flex;align-items:center;justify-content:center;margin-bottom:20px;}
+  .success-title{font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin:0 0 8px;}
+  .success-text{font-size:13.5px;color:var(--muted);margin:0 0 28px;line-height:1.6;}
+
+  /* ── BOTTOM NAV ── */
+  .bottomnav{
+    position:sticky;bottom:0;background:rgba(246,239,226,0.95);
+    backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    display:flex;justify-content:space-around;padding:10px 8px 14px;
+    flex-shrink:0;
+  }
+  .navitem{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--muted);cursor:pointer;position:relative;padding:0 10px;}
+  .navitem.active{color:var(--wine);font-weight:600;}
+  .navitem svg{width:20px;height:20px;}
+  .nav-badge{position:absolute;top:-2px;right:4px;background:var(--wine);color:#fff;font-size:9px;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+
+  /* ── TOAST ── */
+  .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 20px;border-radius:999px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;z-index:200;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .loader{padding:60px;text-align:center;color:var(--muted);font-size:13px;grid-column:1/-1;}
+
+  /* ── SETTINGS (color customization) ── */
+  .settings-list{padding:6px 20px 20px;}
+  .settings-group-title{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:18px 0 6px;}
+  .settings-row{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:11px 0;border-bottom:1px solid var(--line);
+  }
+  .settings-row .rlabel{font-size:13.5px;font-weight:500;}
+  .settings-row .rsub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .color-input-wrap{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .color-input-wrap input[type=color]{
+    width:34px;height:34px;border-radius:9px;border:1px solid var(--line);
+    padding:0;cursor:pointer;background:none;
+  }
+  .settings-reset-btn{
+    width:100%;background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:13px;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--wine-deep);margin-top:10px;
+  }
+  .fav-count-pill{
+    display:inline-flex;align-items:center;gap:5px;background:var(--paper-2);
+    border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;
+    font-weight:600;cursor:pointer;
+  }
+
+  /* ════════════════════════════════════════
+     DESKTOP RESPONSIVE  (≥ 700px)
+  ════════════════════════════════════════ */
+  @media(min-width:700px){
+    body{background:#c8bda4;align-items:flex-start;padding:24px 0;}
+    .frame{max-width:860px;min-height:calc(100vh - 48px);border-radius:16px;box-shadow:0 12px 48px rgba(0,0,0,.18);overflow:hidden;}
+
+    /* Wider grid — 3 columns */
+    .grid{grid-template-columns:repeat(3,1fr);gap:18px;padding:0 28px 28px;}
+    .gcover,.gcover-fallback{height:170px;}
+
+    .header{padding:26px 28px 28px;}
+    .store-title{font-size:28px;}
+    .search-wrap{padding:18px 28px 0;}
+    .chips{padding:14px 28px 6px;}
+    .section-label{padding:22px 28px 12px;}
+    .form-wrap{padding:22px 28px;}
+    .cart-item{padding:16px 28px;}
+    .cart-footer{padding:18px 28px 24px;}
+    .detail-back-bar{padding:16px 28px;}
+    .detail-body{padding:24px 28px 40px;}
+    .detail-cover{max-height:420px;}
+
+    /* On desktop the bottom nav can be a bit wider */
+    .navitem{padding:0 24px;}
+  }
+
+  @media(min-width:1000px){
+    .frame{max-width:1040px;}
+    .grid{grid-template-columns:repeat(4,1fr);}
+
+    /* Detail page: side-by-side on big screens */
+    .detail-layout{display:grid;grid-template-columns:400px 1fr;gap:0;}
+    .detail-img-wrap{
+      position:sticky;top:0;height:100vh;
+      display:flex;align-items:flex-start;
+      background:var(--paper-2);
+    }
+    .detail-cover{max-height:100vh;width:100%;object-fit:contain;object-position:top center;}
+    .detail-cover-fallback{height:100vh;}
+    /* Назва книги на ПК — виправлений шрифт */
+    .detail-title{font-size:28px;line-height:1.25;letter-spacing:0;font-optical-sizing:auto;}
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <!-- ══════════════ HOME ══════════════ -->
+  <div class="screen active" id="screen-home">
+    <div class="header">
+      <p class="eyebrow">Книгарня · 136 тис. читачів</p>
+      <h1 class="store-title">Кращі книги світу тут</h1>
+      <p class="store-sub">Нові надходження щотижня · Доставка по Україні</p>
+      <div class="cart-pill" onclick="goTo('screen-cart')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span id="cart-pill-count">0</span>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <div class="search-row">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="search-input" placeholder="Пошук за назвою або автором" oninput="renderCatalog()">
+        </div>
+        <div class="filter-btn" onclick="openFilters()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+          <span class="filter-dot" id="filter-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chips" id="chips"></div>
+
+    <div class="section-label">
+      <h2>Каталог</h2>
+      <span id="book-count">0 шт.</span>
+    </div>
+
+    <div class="scroll-area">
+      <div class="grid" id="catalog-grid">
+        <div class="loader">Завантаження книг…</div>
+      </div>
+    </div>
+
+    <div class="bottomnav">
+      <div class="navitem active" id="nav-home" onclick="goTo('screen-home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Головна
+      </div>
+      <div class="navitem" id="nav-fav" onclick="goTo('screen-favorites')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        Обране
+        <span class="nav-badge" id="nav-fav-badge" style="display:none;">0</span>
+      </div>
+      <div class="navitem" id="nav-cart" onclick="goTo('screen-cart')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        Кошик
+        <span class="nav-badge" id="nav-cart-badge" style="display:none;">0</span>
+      </div>
+      <div class="navitem" id="nav-profile" onclick="goTo('screen-profile')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Профіль
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ FAVORITES ══════════════ -->
+  <div class="screen" id="screen-favorites">
+    <div class="header" style="padding-bottom:18px;">
+      <div class="back-row">
+        <div class="back-btn" onclick="goTo('screen-home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Назад
+        </div>
+        <h1 class="store-title" style="font-size:19px;">Обране</h1>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="grid" id="favorites-grid"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ DETAIL ══════════════ -->
+  <div class="screen" id="screen-detail">
+    <div class="detail-back-bar">
+      <div class="back-btn dark" onclick="goTo('screen-home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Назад
+      </div>
+    </div>
+    <div id="detail-content"></div>
+  </div>
+
+  <!-- ══════════════ CART ══════════════ -->
+  <div class="screen" id="screen-cart">
+    <div class="header" style="padding-bottom:18px;">
+      <div class="back-row">
+        <div class="back-btn" onclick="goTo('screen-home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Назад
+        </div>
+        <h1 class="store-title" style="font-size:19px;">Кошик</h1>
+      </div>
+    </div>
+    <div class="scroll-area" id="cart-list"></div>
+    <div class="cart-footer" id="cart-footer" style="display:none;">
+      <div class="total-row"><span>Разом</span><span id="cart-total">0 ₴</span></div>
+      <button class="primary-btn" onclick="goTo('screen-checkout')">Оформити замовлення</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ CHECKOUT ══════════════ -->
+  <div class="screen" id="screen-checkout">
+    <div class="header" style="padding-bottom:18px;">
+      <div class="back-row">
+        <div class="back-btn" onclick="goTo('screen-cart')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Назад
+        </div>
+        <h1 class="store-title" style="font-size:19px;">Оформлення</h1>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="form-wrap">
+
+        <div class="field">
+          <label>Ім'я та прізвище</label>
+          <input type="text" id="f-name" placeholder="Андрій Коваленко">
+        </div>
+
+        <div class="field">
+          <label>Телефон</label>
+          <input type="tel" id="f-phone" placeholder="+380 ...">
+        </div>
+
+        <!-- ══ NOVA POSHTA SELECTOR ══ -->
+        <div class="field">
+          <label>Нова пошта — місто</label>
+          <div class="np-wrap" id="np-city-wrap">
+            <input class="np-search-input" type="text" id="np-city-input"
+              placeholder="Почніть вводити місто…"
+              oninput="npSearchCity(this.value)"
+              autocomplete="off">
+            <div class="np-dropdown" id="np-city-dropdown" style="display:none;"></div>
+          </div>
+          <div id="np-city-selected" style="display:none;">
+            <div class="np-selected-tag">
+              <span id="np-city-label"></span>
+              <button class="np-tag-clear" onclick="npResetCity()" title="Змінити місто">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="field" id="np-branch-field" style="display:none;">
+          <label>Тип доставки</label>
+          <div class="np-type-toggle">
+            <button class="np-type-btn active" id="np-btn-branch" onclick="npSetType('branch')">
+              📦 Відділення
+            </button>
+            <button class="np-type-btn" id="np-btn-locker" onclick="npSetType('locker')">
+              🤖 Поштомат
+            </button>
+          </div>
+          <div class="np-branch-list" id="np-branch-list"></div>
+          <div class="np-final" id="np-final" style="display:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            <span id="np-final-text"></span>
+          </div>
+        </div>
+
+        <!-- hidden field for order submission -->
+        <input type="hidden" id="f-address">
+
+        <div class="field">
+          <label>Спосіб оплати</label>
+          <div class="radio-group" id="payment-group"></div>
+          <div id="payment-note" style="display:none;margin-top:8px;padding:10px 13px;border-radius:9px;background:#fff8e6;border:1px solid #e8d48a;font-size:12.5px;color:#7a5c00;line-height:1.5;"></div>
+        </div>
+
+      </div>
+    </div>
+    <div class="cart-footer">
+      <div class="total-row"><span>До сплати</span><span id="checkout-total">0 ₴</span></div>
+      <button class="primary-btn" id="submit-order-btn" onclick="submitOrder()">Підтвердити замовлення</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ SUCCESS ══════════════ -->
+  <div class="screen" id="screen-success">
+    <div class="success-wrap">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" width="32" height="32"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h2 class="success-title">Замовлення прийнято!</h2>
+      <p class="success-text">Дякуємо за замовлення 💜<br>Менеджер зв'яжеться з вами найближчим часом для підтвердження.</p>
+      <button class="primary-btn" style="max-width:280px;" onclick="backToShopping()">До покупок</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ PROFILE ══════════════ -->
+  <div class="screen" id="screen-profile">
+    <div class="header" style="padding-bottom:18px;">
+      <div class="back-row">
+        <div class="back-btn" onclick="goTo('screen-home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Назад
+        </div>
+        <h1 class="store-title" style="font-size:19px;">Профіль</h1>
+      </div>
+    </div>
+    <div class="form-wrap">
+      <p style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:16px;">
+        Тут згодом з'являться: ваші замовлення та персональні знижки.
+      </p>
+      <div class="fav-count-pill" onclick="goTo('screen-favorites')">
+        ❤ Обране: <span id="profile-fav-count">0</span>
+      </div>
+      <button class="primary-btn" style="margin-top:18px;" onclick="goTo('screen-settings')">🎨 Налаштування вигляду</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ SETTINGS (COLOR CUSTOMIZATION) ══════════════ -->
+  <div class="screen" id="screen-settings">
+    <div class="header" style="padding-bottom:18px;">
+      <div class="back-row">
+        <div class="back-btn" onclick="goTo('screen-profile')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Назад
+        </div>
+        <h1 class="store-title" style="font-size:19px;">Налаштування вигляду</h1>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="settings-list" id="settings-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ FILTERS OVERLAY ══════════════ -->
+  <div class="filter-overlay" id="filter-overlay">
+    <div class="filter-panel">
+      <div class="filter-head">
+        <h3>Фільтри</h3>
+        <button class="filter-close" onclick="closeFilters()">✕</button>
+      </div>
+      <div class="filter-body" id="filter-body"></div>
+      <div class="filter-footer">
+        <button class="btn-reset" onclick="resetFilters()">Скинути</button>
+        <button class="btn-apply" onclick="applyFilters()">Показати</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   NOVA POSHTA TEST DATA
+══════════════════════════════════════════ */
+const NP_CITIES = ['Київ','Харків','Одеса','Дніпро','Львів','Запоріжжя','Вінниця','Полтава','Черкаси','Миколаїв','Херсон','Суми','Житомир','Чернігів','Хмельницький'];
+
+const NP_BRANCHES = {
+  'Київ':[
+    {type:'branch',num:'1',addr:'вул. Хрещатик, 22'},
+    {type:'branch',num:'5',addr:'просп. Перемоги, 42'},
+    {type:'branch',num:'12',addr:'вул. Велика Васильківська, 67'},
+    {type:'branch',num:'27',addr:'вул. Оболонський просп., 1'},
+    {type:'branch',num:'44',addr:'вул. Борщагівська, 154'},
+    {type:'locker',num:'КМ-001',addr:'ТРЦ Gulliver, просп. Спортивна пл., 1'},
+    {type:'locker',num:'КМ-045',addr:'ст. м. Лівобережна, Броварський просп., 1а'},
+    {type:'locker',num:'КМ-112',addr:'ТРЦ Ocean Plaza, просп. Голосіївський, 132'},
+  ],
+  'Харків':[
+    {type:'branch',num:'1',addr:'вул. Полтавський Шлях, 4'},
+    {type:'branch',num:'3',addr:'просп. Науки, 14а'},
+    {type:'branch',num:'8',addr:'вул. Клочківська, 60'},
+    {type:'locker',num:'ХМ-012',addr:'ТЦ Дафі, вул. Шевченка, 327'},
+    {type:'locker',num:'ХМ-034',addr:'вул. Сумська, 45'},
+  ],
+  'Одеса':[
+    {type:'branch',num:'1',addr:'вул. Канатна, 65'},
+    {type:'branch',num:'6',addr:'просп. Небесної Сотні, 56'},
+    {type:'branch',num:'11',addr:'вул. Академіка Корольова, 116/1'},
+    {type:'locker',num:'ОМ-007',addr:'ТРЦ Riviera, вул. Генуезька, 24б'},
+  ],
+  'Дніпро':[
+    {type:'branch',num:'1',addr:'просп. Дмитра Яворницького, 91а'},
+    {type:'branch',num:'4',addr:'вул. Робоча, 104'},
+    {type:'locker',num:'ДМ-019',addr:'ТРЦ Appolo, вул. Миронова, 13'},
+    {type:'locker',num:'ДМ-023',addr:'просп. Слобожанський, 1'},
+  ],
+  'Львів':[
+    {type:'branch',num:'1',addr:'вул. Городоцька, 339'},
+    {type:'branch',num:'2',addr:'вул. Зелена, 151'},
+    {type:'branch',num:'7',addr:'вул. Личаківська, 153'},
+    {type:'locker',num:'ЛМ-004',addr:'ТРЦ Forum Lviv, вул. Під Дубом, 7б'},
+  ],
+};
+// Генеруємо дефолтні дані для міст без конкретних відділень
+NP_CITIES.forEach(city=>{
+  if(!NP_BRANCHES[city]){
+    NP_BRANCHES[city]=[
+      {type:'branch',num:'1',addr:'вул. Центральна, 1'},
+      {type:'branch',num:'2',addr:'вул. Вокзальна, 10'},
+      {type:'locker',num:'МП-001',addr:'ТЦ Центральний, вул. Шевченка, 5'},
+    ];
+  }
+});
+
+/* ══════════════════════════════════════════
+   NP SELECTOR STATE & LOGIC
+══════════════════════════════════════════ */
+let npSelectedCity = '';
+let npSelectedType = 'branch';
+let npSelectedBranch = null;
+
+function npSearchCity(val){
+  const q = val.trim().toLowerCase();
+  const dd = document.getElementById('np-city-dropdown');
+  if(!q){ dd.style.display='none'; return; }
+  const matches = NP_CITIES.filter(c=>c.toLowerCase().includes(q));
+  if(!matches.length){ dd.style.display='none'; return; }
+  dd.innerHTML = matches.map(c=>{
+    const hi = c.replace(new RegExp(`(${q})`, 'gi'), '<b>$1</b>');
+    return `<div class="np-dropdown-item" onclick="npSelectCity('${c}')">${hi}</div>`;
+  }).join('');
+  dd.style.display='block';
+}
+
+function npSelectCity(city){
+  npSelectedCity = city;
+  npSelectedBranch = null;
+  document.getElementById('np-city-input').value = city;
+  document.getElementById('np-city-dropdown').style.display='none';
+  document.getElementById('np-city-wrap').style.display='none';
+  document.getElementById('np-city-label').textContent = city;
+  document.getElementById('np-city-selected').style.display='block';
+  document.getElementById('np-branch-field').style.display='block';
+  document.getElementById('np-final').style.display='none';
+  document.getElementById('f-address').value = '';
+  npRenderBranches();
+  renderPaymentOptions(npSelectedType);
+}
+
+function npResetCity(){
+  npSelectedCity=''; npSelectedBranch=null;
+  document.getElementById('np-city-input').value='';
+  document.getElementById('np-city-wrap').style.display='block';
+  document.getElementById('np-city-selected').style.display='none';
+  document.getElementById('np-branch-field').style.display='none';
+  document.getElementById('np-final').style.display='none';
+  document.getElementById('f-address').value='';
+}
+
+function npSetType(type){
+  npSelectedType = type;
+  npSelectedBranch = null;
+  document.getElementById('np-btn-branch').classList.toggle('active', type==='branch');
+  document.getElementById('np-btn-locker').classList.toggle('active', type==='locker');
+  document.getElementById('np-final').style.display='none';
+  document.getElementById('f-address').value='';
+  npRenderBranches();
+  renderPaymentOptions(type);
+}
+
+function renderPaymentOptions(deliveryType){
+  // І для відділення, і для поштомату доступні обидва способи оплати
+  const group = document.getElementById('payment-group');
+  const note  = document.getElementById('payment-note');
+  group.innerHTML = `
+    <label class="radio-opt checked">
+      <input type="radio" name="payment" value="Накладений платіж" checked>
+      <span class="rlabel">Накладений платіж (передоплата 100 ₴)</span>
+    </label>
+    <label class="radio-opt">
+      <input type="radio" name="payment" value="Повна передоплата">
+      <span class="rlabel">Повна передоплата (на картку)</span>
+    </label>`;
+  note.style.display = 'none';
+}
+
+function npRenderBranches(){
+  const list = (NP_BRANCHES[npSelectedCity]||[]).filter(b=>b.type===npSelectedType);
+  const el = document.getElementById('np-branch-list');
+  if(!list.length){
+    el.innerHTML=`<div class="np-branch-item"><span class="np-branch-addr">Відсутні варіанти для цього типу</span></div>`;
+    return;
+  }
+  el.innerHTML = list.map(b=>`
+    <div class="np-branch-item ${npSelectedBranch===b.num?'selected':''}"
+         onclick="npSelectBranch('${b.num}','${b.addr.replace(/'/g,"\\'")}','${b.type}')">
+      <span class="np-branch-num">
+        ${b.type==='branch'?'Відділення №':'Поштомат '}${b.num}
+      </span>
+      <span class="np-branch-addr">${b.addr}</span>
+    </div>
+  `).join('');
+}
+
+function npSelectBranch(num, addr, type){
+  npSelectedBranch = num;
+  const label = type==='branch'
+    ? `${npSelectedCity}, відділення №${num} — ${addr}`
+    : `${npSelectedCity}, поштомат ${num} — ${addr}`;
+  document.getElementById('f-address').value = label;
+  document.getElementById('np-final-text').textContent = label;
+  document.getElementById('np-final').style.display='flex';
+  npRenderBranches();
+}
+
+/* ══════════════════════════════════════════
+   BOOKS API & STORE
+══════════════════════════════════════════ */
+const API_URL = "https://script.google.com/macros/s/AKfycbyeRKuwYBjKE4j0ycBKXEG3AtdAqMFQymBOG5gmgN0QtuJYrUT3FEMx9UTbd7LKaNvS/exec";
+
+const FALLBACK_BOOKS = [];
+
+let BOOKS = [];
+let cart = JSON.parse(localStorage.getItem("bookstore_cart")||"{}");
+let favorites = JSON.parse(localStorage.getItem("bookstore_favs")||"[]");
+let activeCategory = "Усі";
+let tg = window.Telegram ? window.Telegram.WebApp : null;
+if(tg){ tg.ready(); tg.expand(); }
+
+/* ── FILTERS STATE ── */
+let filters = {
+  genre:[], author:[], language:[], publisher:[],
+  onlyPromo:false, onlyStock:false, priceMin:null, priceMax:null
+};
+let draftFilters = null; // working copy while panel is open
+
+function saveCart(){ localStorage.setItem("bookstore_cart",JSON.stringify(cart)); updateCartBadges(); }
+function saveFavorites(){ localStorage.setItem("bookstore_favs",JSON.stringify(favorites)); updateFavBadges(); }
+function isFavorite(id){ return favorites.includes(id); }
+function toggleFavorite(id){
+  if(isFavorite(id)) favorites=favorites.filter(x=>x!==id);
+  else favorites=[...favorites,id];
+  saveFavorites();
+  renderCatalog();
+  if(document.getElementById('screen-favorites').classList.contains('active')) renderFavorites();
+  const dc=document.getElementById('detail-content');
+  if(dc){ const hb=dc.querySelector('.detail-heart-btn'); if(hb) hb.classList.toggle('active',isFavorite(id)); }
+}
+function updateFavBadges(){
+  const n=favorites.length;
+  const badge=document.getElementById('nav-fav-badge');
+  if(badge){ badge.textContent=n; badge.style.display=n>0?'flex':'none'; }
+  const pc=document.getElementById('profile-fav-count');
+  if(pc) pc.textContent=n;
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(()=>t.classList.remove('show'),1600);
+}
+
+function goTo(screenId){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  document.querySelectorAll('.navitem').forEach(n=>n.classList.remove('active'));
+  if(screenId==='screen-home') document.getElementById('nav-home').classList.add('active');
+  if(screenId==='screen-cart'){ document.getElementById('nav-cart').classList.add('active'); renderCart(); }
+  if(screenId==='screen-profile') document.getElementById('nav-profile').classList.add('active');
+  if(screenId==='screen-favorites'){ document.getElementById('nav-fav').classList.add('active'); renderFavorites(); }
+  if(screenId==='screen-settings') renderSettings();
+  if(screenId==='screen-checkout'){ renderCheckoutTotal(); renderPaymentOptions(npSelectedType); }
+  window.scrollTo(0,0);
+}
+
+function toDirectImageUrl(url){
+  if(!url) return "";
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(m && url.includes("drive.google.com"))
+    return `https://lh3.googleusercontent.com/d/${m[1]}=w1000`;
+  return url;
+}
+
+async function loadBooks(){
+  if(!API_URL||API_URL.includes("ВСТАВ_СЮДИ")){ initCatalog(); return; }
+  try{
+    const res = await fetch(API_URL+"?action=books");
+    const data = await res.json();
+    BOOKS = data
+      .map(b=>({
+        id: String(b.id||b.ID||b.Id),
+        name: b.name||b.Назва||"",
+        author: b.author||b.Автор||"",
+        price: Number(b.price||b.Ціна)||0,
+        oldPrice: b.oldPrice||b["Стара ціна"]||"",
+        category: b.category||b.Категорія||"Інше",
+        cover: toDirectImageUrl(b.cover||b.Обкладинка||""),
+        badge: b.badge||b.Бейдж||"",
+        description: b.description||b.Опис||"",
+        stock: Number(b.stock!==undefined?b.stock:(b.Наявність!==undefined?b.Наявність:0))||0,
+        genre: b.genre||b.Жанр||"",
+        language: b.language||b.Мова||"",
+        publisher: b.publisher||b.Видавництво||""
+      }))
+      .filter(b=>b.name.trim()!=="");
+  }catch(e){ console.error("loadBooks error:",e); }
+  initCatalog();
+}
+
+function initCatalog(){ renderChips(); renderCatalog(); updateCartBadges(); updateFavBadges(); }
+
+function renderChips(){
+  const cats=["Усі",...new Set(BOOKS.map(b=>b.category))];
+  document.getElementById('chips').innerHTML = cats.map(c=>
+    `<div class="chip ${c===activeCategory?'active':''}" onclick="setCategory('${c.replace(/'/g,"\\'")}' )">${c}</div>`
+  ).join('');
+}
+function setCategory(c){ activeCategory=c; renderChips(); renderCatalog(); }
+
+/* ══════════════════════════════════════════
+   FILTER PANEL
+══════════════════════════════════════════ */
+function uniqVals(field){
+  return [...new Set(BOOKS.map(b=>b[field]).filter(v=>v && String(v).trim()!==""))];
+}
+
+function openFilters(){
+  draftFilters = JSON.parse(JSON.stringify(filters));
+  renderFilterBody();
+  document.getElementById('filter-overlay').classList.add('show');
+}
+function closeFilters(){
+  document.getElementById('filter-overlay').classList.remove('show');
+}
+function resetFilters(){
+  draftFilters = {genre:[],author:[],language:[],publisher:[],onlyPromo:false,onlyStock:false,priceMin:null,priceMax:null};
+  renderFilterBody();
+}
+function applyFilters(){
+  filters = draftFilters;
+  renderCatalog();
+  closeFilters();
+}
+function toggleDraftVal(field,val){
+  const arr = draftFilters[field];
+  const i = arr.indexOf(val);
+  if(i>-1) arr.splice(i,1); else arr.push(val);
+  renderFilterBody();
+}
+
+function filterOptsHtml(field,label){
+  const vals = uniqVals(field);
+  if(!vals.length) return '';
+  return `
+    <div class="filter-group">
+      <p class="filter-group-label">${label}</p>
+      <div class="filter-opts">
+        ${vals.map(v=>`<span class="filter-opt ${draftFilters[field].includes(v)?'active':''}" onclick="toggleDraftVal('${field}','${String(v).replace(/'/g,"\\'")}' )">${v}</span>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderFilterBody(){
+  const el = document.getElementById('filter-body');
+  el.innerHTML = `
+    ${filterOptsHtml('genre','Жанр')}
+    ${filterOptsHtml('author','Автор')}
+    ${filterOptsHtml('language','Мова')}
+    ${filterOptsHtml('publisher','Видавництво')}
+    <div class="filter-group">
+      <p class="filter-group-label">Ціновий діапазон, ₴</p>
+      <div class="price-range-row">
+        <input type="number" placeholder="Від" min="0" id="ff-price-min" value="${draftFilters.priceMin??''}">
+        <span>—</span>
+        <input type="number" placeholder="До" min="0" id="ff-price-max" value="${draftFilters.priceMax??''}">
+      </div>
+    </div>
+    <div class="filter-group">
+      <div class="filter-toggle-row">
+        <span class="rlabel">Лише акційні / зі знижкою</span>
+        <label class="switch">
+          <input type="checkbox" id="ff-promo" ${draftFilters.onlyPromo?'checked':''} onchange="draftFilters.onlyPromo=this.checked">
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+      <div class="filter-toggle-row">
+        <span class="rlabel">Лише в наявності</span>
+        <label class="switch">
+          <input type="checkbox" id="ff-stock" ${draftFilters.onlyStock?'checked':''} onchange="draftFilters.onlyStock=this.checked">
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+    </div>
+  `;
+  document.getElementById('ff-price-min').oninput=function(){ draftFilters.priceMin=this.value===''?null:Number(this.value); };
+  document.getElementById('ff-price-max').oninput=function(){ draftFilters.priceMax=this.value===''?null:Number(this.value); };
+}
+
+function matchesFilters(b){
+  if(activeCategory!=="Усі" && b.category!==activeCategory) return false;
+  if(filters.genre.length && !filters.genre.includes(b.genre)) return false;
+  if(filters.author.length && !filters.author.includes(b.author)) return false;
+  if(filters.language.length && !filters.language.includes(b.language)) return false;
+  if(filters.publisher.length && !filters.publisher.includes(b.publisher)) return false;
+  if(filters.onlyPromo && !(b.badge || b.oldPrice)) return false;
+  if(filters.onlyStock && !(b.stock>0)) return false;
+  if(filters.priceMin!==null && !isNaN(filters.priceMin) && b.price<filters.priceMin) return false;
+  if(filters.priceMax!==null && !isNaN(filters.priceMax) && b.price>filters.priceMax) return false;
+  return true;
+}
+
+function bookCardHtml(b){
+  const inStock = b.stock>0;
+  const fav = isFavorite(b.id);
+  return `
+    <div class="gcard" onclick="openDetail('${b.id}')">
+      <div class="gcard-img">
+        ${b.cover
+          ? `<img class="gcover" src="${b.cover}" alt="${b.name}" onerror="this.outerHTML='<div class=&quot;gcover-fallback&quot;><span class=&quot;cover-title&quot;>${b.name.replace(/'/g,"&#39;")}</span></div>'">`
+          : `<div class="gcover-fallback"><span class="cover-title">${b.name}</span></div>`}
+        ${b.badge?`<span class="gbadge">${b.badge}</span>`:''}
+        <button class="heart-btn ${fav?'active':''}" onclick="event.stopPropagation();toggleFavorite('${b.id}')" title="До обраного">
+          <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        </button>
+      </div>
+      <div class="gbody">
+        <p class="gname">${b.name}</p>
+        <p class="gauthor">${b.author}</p>
+        <p class="gavail ${inStock?'yes':'no'}">${inStock?'В наявності':'Немає в наявності'}</p>
+        <div class="grow">
+          <span>
+            ${b.oldPrice?`<span class="old-price">${b.oldPrice} ₴</span>`:''}
+            <span class="gprice ${b.oldPrice?'sale':''}">${b.price} ₴</span>
+          </span>
+          <button class="addbtn" onclick="event.stopPropagation();addToCart('${b.id}',1);showToast('Додано в кошик')">До кошика</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCatalog(){
+  const q=(document.getElementById('search-input').value||"").toLowerCase();
+  const list=BOOKS.filter(b=>{
+    return matchesFilters(b)
+      && (!q||b.name.toLowerCase().includes(q)||b.author.toLowerCase().includes(q));
+  });
+  document.getElementById('book-count').textContent=list.length+" шт.";
+  const grid=document.getElementById('catalog-grid');
+  const dot=document.getElementById('filter-dot');
+  if(dot) dot.style.display = filtersActive() ? 'block' : 'none';
+  if(!list.length){
+    grid.innerHTML=`<div class="empty-state">${q||activeCategory!=="Усі"||filtersActive()?'Нічого не знайдено 🔎<br>Спробуйте інший запит':'Каталог поки порожній 📚<br>Додайте книги до таблиці'}</div>`;
+    return;
+  }
+  grid.innerHTML=list.map(bookCardHtml).join('');
+}
+
+function renderFavorites(){
+  const grid=document.getElementById('favorites-grid');
+  const list=BOOKS.filter(b=>isFavorite(b.id));
+  if(!list.length){
+    grid.innerHTML=`<div class="empty-state">Тут поки порожньо 🤍<br>Тисніть на сердечко в каталозі, щоб зберегти книгу</div>`;
+    return;
+  }
+  grid.innerHTML=list.map(bookCardHtml).join('');
+}
+
+function filtersActive(){
+  return filters.genre.length||filters.author.length||filters.language.length||filters.publisher.length
+    ||filters.onlyPromo||filters.onlyStock||filters.priceMin!==null||filters.priceMax!==null;
+}
+
+function openDetail(id){
+  const b=BOOKS.find(x=>x.id===id);
+  if(!b) return;
+  const qty=cart[id]||1;
+  document.getElementById('detail-content').innerHTML=`
+    <div class="detail-layout">
+      <div class="detail-img-wrap">
+        ${b.cover
+          ? `<img class="detail-cover" src="${b.cover}"
+               onerror="this.outerHTML='<div class=&quot;detail-cover-fallback&quot;><span class=&quot;cover-title&quot; style=&quot;font-size:20px;&quot;>${b.name.replace(/'/g,"&#39;")}</span></div>'">`
+          : `<div class="detail-cover-fallback"><span class="cover-title" style="font-size:20px;">${b.name}</span></div>`}
+      </div>
+      <div class="detail-body">
+        ${b.badge?`<span class="detail-badge">${b.badge}</span>`:''}
+        <div class="detail-title-row">
+          <div>
+            <h1 class="detail-title">${b.name}</h1>
+            <p class="detail-author">${b.author} · ${b.category}</p>
+          </div>
+          <button class="detail-heart-btn ${isFavorite(id)?'active':''}" onclick="toggleFavorite('${id}')" title="До обраного">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+          </button>
+        </div>
+        <p class="detail-avail ${b.stock>0?'yes':'no'}">${b.stock>0?'В наявності':'Немає в наявності'}</p>
+        <div class="detail-price-row">
+          ${b.oldPrice?`<span class="old-price" style="font-size:15px;">${b.oldPrice} ₴</span>`:''}
+          <span class="detail-price ${b.oldPrice?'sale':''}">${b.price} ₴</span>
+        </div>
+        <p class="detail-desc">${b.description||"Доставка Новою поштою по всій Україні. Накладений платіж з передоплатою 100 ₴, або повна оплата карткою."}</p>
+        <div class="qty-row">
+          <button class="qty-btn" onclick="changeDetailQty('${id}',-1)">−</button>
+          <span class="qty-val" id="detail-qty">${qty}</span><span class="qty-unit">шт.</span>
+          <button class="qty-btn" onclick="changeDetailQty('${id}',1)">+</button>
+        </div>
+        <button class="primary-btn"
+          onclick="addToCart('${id}',parseInt(document.getElementById('detail-qty').textContent));showToast('Додано в кошик');goTo('screen-home')">
+          До кошика
+        </button>
+      </div>
+    </div>
+  `;
+  goTo('screen-detail');
+  document.getElementById('screen-detail').scrollTop=0;
+}
+
+function changeDetailQty(id,delta){
+  const el=document.getElementById('detail-qty');
+  let v=parseInt(el.textContent)+delta;
+  if(v<1)v=1;
+  el.textContent=v;
+}
+
+function addToCart(id,qty){ cart[id]=(cart[id]||0)+qty; saveCart(); }
+function removeFromCart(id){ delete cart[id]; saveCart(); renderCart(); }
+function changeCartQty(id,delta){
+  cart[id]=(cart[id]||0)+delta;
+  if(cart[id]<=0) delete cart[id];
+  saveCart(); renderCart();
+}
+function cartCount(){ return Object.values(cart).reduce((a,b)=>a+b,0); }
+function cartTotal(){
+  return Object.entries(cart).reduce((sum,[id,qty])=>{
+    const b=BOOKS.find(x=>x.id===id);
+    return sum+(b?b.price*qty:0);
+  },0);
+}
+function updateCartBadges(){
+  const n=cartCount();
+  document.getElementById('cart-pill-count').textContent=n;
+  const badge=document.getElementById('nav-cart-badge');
+  badge.textContent=n;
+  badge.style.display=n>0?'flex':'none';
+}
+
+function renderCart(){
+  const ids=Object.keys(cart);
+  const list=document.getElementById('cart-list');
+  const footer=document.getElementById('cart-footer');
+  if(!ids.length){
+    list.innerHTML=`<div class="empty-state" style="grid-column:unset;">Кошик порожній 🛒<br>Додайте книги з каталогу</div>`;
+    footer.style.display='none'; return;
+  }
+  footer.style.display='block';
+  list.innerHTML=ids.map(id=>{
+    const b=BOOKS.find(x=>x.id===id);
+    if(!b) return '';
+    const qty=cart[id];
+    return `
+      <div class="cart-item">
+        ${b.cover
+          ? `<img class="cart-thumb" src="${b.cover}" onerror="this.outerHTML='<div class=&quot;cart-item-fallback&quot;><span>${b.name.replace(/'/g,"&#39;")}</span></div>'">`
+          : `<div class="cart-item-fallback"><span>${b.name}</span></div>`}
+        <div class="ci-info">
+          <p class="ci-name">${b.name}</p>
+          <p class="ci-author">${b.author}</p>
+          <div class="ci-row">
+            <div class="ci-qty">
+              <button onclick="changeCartQty('${id}',-1)">−</button>
+              <span>${qty}</span>
+              <button onclick="changeCartQty('${id}',1)">+</button>
+            </div>
+            <span class="ci-price">${b.price*qty} ₴</span>
+          </div>
+          <button class="ci-remove" onclick="removeFromCart('${id}')">Видалити</button>
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('cart-total').textContent=cartTotal()+" ₴";
+}
+
+function renderCheckoutTotal(){
+  document.getElementById('checkout-total').textContent=cartTotal()+" ₴";
+}
+
+document.addEventListener('change',e=>{
+  if(e.target.name==='payment'){
+    document.getElementById('payment-group').querySelectorAll('.radio-opt').forEach(o=>o.classList.remove('checked'));
+    e.target.closest('.radio-opt').classList.add('checked');
+  }
+});
+
+// Close NP dropdown on outside click
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#np-city-wrap'))
+    document.getElementById('np-city-dropdown').style.display='none';
+});
+
+// Close filter overlay on backdrop click
+document.getElementById('filter-overlay').addEventListener('click',e=>{
+  if(e.target.id==='filter-overlay') closeFilters();
+});
+
+/* ══════════════════════════════════════════
+   SETTINGS — COLOR CUSTOMIZATION
+══════════════════════════════════════════ */
+const COLOR_SETTINGS = [
+  {group:'Загальне', items:[
+    {v:'--c-header-bg', label:'Колір шапки', def:'#7a2630'},
+    {v:'--c-header-text', label:'Колір тексту шапки', def:'#f6efe2'},
+    {v:'--c-chip-active', label:'Колір активних фільтрів/категорій', def:'#7a2630'},
+    {v:'--c-cardbg', label:'Фон картки товару', def:'#ffffff'},
+  ]},
+  {group:'Ціна', items:[
+    {v:'--c-price', label:'Колір звичайної ціни', def:'#7a2630'},
+    {v:'--c-sale-price', label:'Колір ціни зі знижкою / акції', def:'#c0392b'},
+    {v:'--c-oldprice', label:'Колір закресленої старої ціни', def:'#8a7d63'},
+  ]},
+  {group:'Бейджі та кнопки', items:[
+    {v:'--c-badge-bg', label:'Фон бейджа (акція, новинка)', def:'#7a2630'},
+    {v:'--c-badge-text', label:'Текст бейджа', def:'#ffffff'},
+    {v:'--c-addbtn-bg', label:'Фон кнопки "До кошика"', def:'#7a2630'},
+    {v:'--c-addbtn-text', label:'Текст кнопки "До кошика"', def:'#ffffff'},
+  ]},
+  {group:'Обране та наявність', items:[
+    {v:'--c-heart', label:'Колір активного сердечка', def:'#7a2630'},
+    {v:'--c-heart-off', label:'Колір неактивного сердечка', def:'#c9bfa8'},
+    {v:'--c-instock', label:'Колір "В наявності"', def:'#3f5e3a'},
+    {v:'--c-outstock', label:'Колір "Немає в наявності"', def:'#a33b3b'},
+  ]},
+];
+
+function loadColorSettings(){
+  const saved = JSON.parse(localStorage.getItem('bookstore_colors')||'{}');
+  Object.entries(saved).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
+}
+function currentColorVal(v,def){
+  const val = getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  return val || def;
+}
+function setColorVal(v,val){
+  document.documentElement.style.setProperty(v,val);
+  const saved = JSON.parse(localStorage.getItem('bookstore_colors')||'{}');
+  saved[v]=val;
+  localStorage.setItem('bookstore_colors',JSON.stringify(saved));
+}
+function renderSettings(){
+  const el = document.getElementById('settings-list');
+  el.innerHTML = COLOR_SETTINGS.map(g=>`
+    <p class="settings-group-title">${g.group}</p>
+    ${g.items.map(it=>`
+      <div class="settings-row">
+        <span class="rlabel">${it.label}</span>
+        <div class="color-input-wrap">
+          <input type="color" value="${currentColorVal(it.v,it.def)}" oninput="setColorVal('${it.v}',this.value)">
+        </div>
+      </div>
+    `).join('')}
+  `).join('') + `<button class="settings-reset-btn" onclick="resetColorSettings()">Скинути кольори до стандартних</button>`;
+}
+function resetColorSettings(){
+  localStorage.removeItem('bookstore_colors');
+  COLOR_SETTINGS.forEach(g=>g.items.forEach(it=>document.documentElement.style.removeProperty(it.v)));
+  renderSettings();
+  renderCatalog();
+  showToast('Кольори скинуто');
+}
+loadColorSettings();
+
+async function submitOrder(){
+  const name=document.getElementById('f-name').value.trim();
+  const phone=document.getElementById('f-phone').value.trim();
+  const address=document.getElementById('f-address').value.trim();
+  const payment=document.querySelector('input[name=payment]:checked').value;
+
+  if(!name||!phone||!address){
+    showToast(!address?'Оберіть відділення Нової пошти':'Заповніть усі поля');
+    return;
+  }
+
+  const items=Object.entries(cart).map(([id,qty])=>{
+    const b=BOOKS.find(x=>x.id===id);
+    return {id,name:b?b.name:id,price:b?b.price:0,qty};
+  });
+  const tgUser=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user
+    ?(tg.initDataUnsafe.user.username||tg.initDataUnsafe.user.first_name):"";
+
+  const order={name,phone,address,payment,items,total:cartTotal(),telegram:tgUser,date:new Date().toISOString()};
+  const btn=document.getElementById('submit-order-btn');
+  btn.disabled=true; btn.textContent="Надсилаємо…";
+
+  try{
+    if(API_URL&&!API_URL.includes("ВСТАВ_СЮДИ")){
+      await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"order",...order})});
+    } else {
+      console.log("ДЕМО-режим:",order);
+    }
+    cart={}; saveCart(); goTo('screen-success');
+  }catch(e){
+    console.error(e); showToast('Помилка. Спробуйте ще раз');
+  }finally{
+    btn.disabled=false; btn.textContent="Підтвердити замовлення";
+  }
+}
+
+function backToShopping(){ goTo('screen-home'); }
+
+loadBooks();
+</script>
+</body>
+</html>
