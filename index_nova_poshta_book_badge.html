@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Книгарня · Mini App</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --paper:#f6efe2;
+    --paper-2:#efe4d0;
+    --ink:#241c14;
+    --wine:#7a2630;
+    --wine-deep:#591b22;
+    --gold:#b08d4f;
+    --line:#ddccaa;
+    --muted:#8a7d63;
+    --ok:#3f5e3a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:#d8cdb4;}
+  body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;justify-content:center;}
+  button{font-family:inherit;}
+
+  .frame{width:100%;max-width:430px;min-height:100vh;background:var(--paper);position:relative;display:flex;flex-direction:column;}
+  .screen{display:none;flex:1;flex-direction:column;}
+  .screen.active{display:flex;}
+
+  .header{padding:18px 18px 22px;background:var(--wine);color:var(--paper);position:relative;}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;margin:0 0 6px;}
+  .store-title{font-family:'Fraunces',serif;font-weight:600;font-size:24px;margin:0 0 4px;letter-spacing:-0.01em;}
+  .store-sub{font-size:12.5px;opacity:.8;margin:0;}
+  .back-row{display:flex;align-items:center;gap:10px;}
+  .back-btn{background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.25);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--paper);}
+  .cart-pill{position:absolute;top:18px;right:18px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.25);border-radius:999px;padding:7px 12px;font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;}
+  .cart-pill svg{width:14px;height:14px;}
+
+  .search-wrap{padding:14px 18px 0;}
+  .search{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px;}
+  .search input{border:none;outline:none;font-size:14px;font-family:inherit;color:var(--ink);width:100%;background:transparent;}
+  .search svg{width:16px;height:16px;flex-shrink:0;opacity:.6;}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:14px 18px 6px;scrollbar-width:none;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{flex:none;padding:8px 14px;border-radius:999px;font-size:13px;font-weight:500;background:var(--paper-2);border:1px solid var(--line);color:var(--ink);white-space:nowrap;cursor:pointer;}
+  .chip.active{background:var(--wine);color:var(--paper);border-color:var(--wine);}
+
+  .section-label{display:flex;align-items:baseline;justify-content:space-between;padding:20px 18px 10px;}
+  .section-label h2{font-family:'Fraunces',serif;font-size:17px;font-weight:600;margin:0;}
+  .section-label span{font-size:12px;color:var(--wine);font-weight:600;}
+
+  .scroll-area{flex:1;overflow-y:auto;padding-bottom:8px;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 18px 18px;}
+  .gcard{background:#fff;border-radius:12px;border:1px solid var(--line);overflow:hidden;cursor:pointer;}
+  .gcover{height:150px;width:100%;object-fit:cover;background:var(--paper-2);display:block;}
+  .gcover-fallback{height:150px;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;background:linear-gradient(160deg,#7a2630,#591b22);}
+  .cover-title{font-family:'Fraunces',serif;font-weight:600;font-size:12px;line-height:1.3;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.25);}
+  .gbody{padding:10px 12px 12px;position:relative;}
+  .book-badge{
+    display:inline-block;
+    background:var(--wine);
+    color:#fff;
+    font-size:10px;
+    font-weight:700;
+    padding:4px 8px;
+    border-radius:999px;
+    margin-bottom:6px;
+  }
+  .gname{font-size:12.5px;font-weight:600;margin:0 0 4px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .gauthor{font-size:11px;color:var(--muted);margin:0 0 8px;}
+  .grow{display:flex;align-items:center;justify-content:space-between;}
+  .gprice{font-size:13.5px;font-weight:700;color:var(--wine);}
+  .old-price{font-size:10.5px;color:var(--muted);text-decoration:line-through;margin-right:5px;}
+  .addbtn{width:26px;height:26px;border-radius:50%;background:var(--wine);color:#fff;border:none;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .empty-state{padding:60px 30px;text-align:center;color:var(--muted);font-size:13.5px;}
+
+  .detail-cover{width:100%;height:280px;object-fit:cover;background:var(--paper-2);}
+  .detail-cover-fallback{width:100%;height:280px;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#7a2630,#591b22);}
+  .detail-cover-fallback .cover-title{font-size:20px;}
+  .detail-body{padding:20px 18px;}
+  .detail-title{font-family:'Fraunces',serif;font-size:21px;font-weight:600;margin:0 0 4px;}
+  .detail-author{font-size:13.5px;color:var(--muted);margin:0 0 14px;}
+  .detail-price-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+  .detail-price{font-size:22px;font-weight:700;color:var(--wine);}
+  .detail-desc{font-size:13.5px;line-height:1.6;color:#4a4030;margin-bottom:20px;}
+  .qty-row{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+  .qty-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:17px;cursor:pointer;}
+  .qty-val{font-size:15px;font-weight:600;min-width:20px;text-align:center;}
+  .primary-btn{width:100%;background:var(--wine);color:#fff;border:none;border-radius:12px;padding:15px;font-size:14.5px;font-weight:600;cursor:pointer;}
+  .primary-btn:disabled{opacity:.5;}
+
+  .cart-item{display:flex;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);}
+  .cart-item img, .cart-item-fallback{width:54px;height:76px;border-radius:6px;object-fit:cover;flex-shrink:0;}
+  .cart-item-fallback{display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#7a2630,#591b22);}
+  .cart-item-fallback span{font-size:9px;color:#fff;text-align:center;padding:4px;}
+  .ci-info{flex:1;min-width:0;}
+  .ci-name{font-size:13px;font-weight:600;margin:0 0 2px;}
+  .ci-author{font-size:11px;color:var(--muted);margin:0 0 8px;}
+  .ci-row{display:flex;align-items:center;justify-content:space-between;}
+  .ci-qty{display:flex;align-items:center;gap:8px;}
+  .ci-qty button{width:24px;height:24px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:14px;}
+  .ci-price{font-size:13px;font-weight:700;color:var(--wine);}
+  .ci-remove{font-size:11px;color:var(--muted);text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;margin-top:6px;}
+
+  .cart-footer{padding:16px 18px 20px;border-top:1px solid var(--line);background:var(--paper);}
+  .total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .total-row span:first-child{font-size:13px;color:var(--muted);}
+  .total-row span:last-child{font-size:19px;font-weight:700;}
+
+  .form-wrap{padding:18px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;}
+  .field input{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px 13px;font-size:14px;font-family:inherit;background:#fff;outline:none;}
+  .field input:focus{border-color:var(--wine);}
+  .field select{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 13px;
+    font-size:14px;
+    margin-bottom:10px;
+    background:#fff;
+    font-family:inherit;
+  }
+  .radio-group{display:flex;flex-direction:column;gap:8px;}
+  .radio-opt{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:12px 13px;cursor:pointer;}
+  .radio-opt.checked{border-color:var(--wine);background:#fdf6ee;}
+  .radio-opt input{margin:0;}
+  .radio-opt .rlabel{font-size:13.5px;font-weight:500;}
+
+  .success-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;}
+  .success-icon{width:64px;height:64px;border-radius:50%;background:var(--ok);display:flex;align-items:center;justify-content:center;margin-bottom:20px;}
+  .success-title{font-family:'Fraunces',serif;font-size:20px;font-weight:600;margin:0 0 8px;}
+  .success-text{font-size:13.5px;color:var(--muted);margin:0 0 24px;line-height:1.5;}
+
+  .bottomnav{position:sticky;bottom:0;background:rgba(246,239,226,0.95);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:10px 8px 14px;}
+  .navitem{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--muted);cursor:pointer;position:relative;}
+  .navitem.active{color:var(--wine);font-weight:600;}
+  .navitem svg{width:20px;height:20px;}
+  .nav-badge{
+  position:absolute;
+  top:-6px;
+  right:2px;
+  background:#d12b35;
+  color:#fff;
+  font-size:10px;
+  font-weight:700;
+  min-width:18px;
+  height:18px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 5px;
+  z-index:5;
+}
+
+  .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;z-index:50;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .loader{padding:60px;text-align:center;color:var(--muted);font-size:13px;}
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+  <div class="screen active" id="screen-home">
+    <div class="header">
+      <p class="eyebrow">Книгарня · 136 тис. читачів</p>
+      <h1 class="store-title">Кращі книги світу тут</h1>
+      <p class="store-sub">Нові надходження щотижня · Доставка по Україні</p>
+      <div class="cart-pill" onclick="goTo('screen-cart')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span id="cart-pill-count">0</span>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="search-input" placeholder="Пошук за назвою або автором" oninput="renderCatalog()">
+      </div>
+    </div>
+
+    <div class="chips" id="chips"></div>
+
+    <div class="section-label">
+      <h2>Каталог</h2>
+      <span id="book-count">0 шт.</span>
+    </div>
+
+    <div class="scroll-area">
+      <div class="grid" id="catalog-grid">
+        <div class="loader">Завантаження книг…</div>
+      </div>
+    </div>
+
+    <div class="bottomnav">
+      <div class="navitem active" id="nav-home" onclick="goTo('screen-home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Головна
+      </div>
+      <div class="navitem" id="nav-cart" onclick="goTo('screen-cart')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        Кошик
+        <span class="nav-badge" id="nav-cart-badge" style="display:none;">0</span>
+      </div>
+      <div class="navitem" id="nav-profile" onclick="goTo('screen-profile')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Профіль
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-detail">
+    <div id="detail-content"></div>
+  </div>
+
+  <div class="screen" id="screen-cart">
+    <div class="header" style="padding-bottom:18px;">
+      <div class="back-row">
+        <div class="back-btn" onclick="goTo('screen-home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </div>
+        <h1 class="store-title" style="font-size:19px;">Кошик</h1>
+      </div>
+    </div>
+    <div class="scroll-area" id="cart-list"></div>
+    <div class="cart-footer" id="cart-footer" style="display:none;">
+      <div class="total-row"><span>Разом</span><span id="cart-total">0 ₴</span></div>
+      <button class="primary-btn" onclick="goTo('screen-checkout')">Оформити замовлення</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-checkout">
+    <div class="header" style="padding-bottom:18px;">
+      <div class="back-row">
+        <div class="back-btn" onclick="goTo('screen-cart')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </div>
+        <h1 class="store-title" style="font-size:19px;">Оформлення</h1>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="form-wrap">
+        <div class="field">
+          <label>Ім'я та прізвище</label>
+          <input type="text" id="f-name" placeholder="Андрій Коваленко">
+        </div>
+        <div class="field">
+          <label>Телефон</label>
+          <input type="tel" id="f-phone" placeholder="+380 ...">
+        </div>
+        <div class="field">
+          <label>Виберіть Нову пошту</label>
+
+          <select id="np-type" onchange="renderNPList()">
+            <option value="branch">Відділення</option>
+            <option value="locker">Поштомат</option>
+          </select>
+
+          <select id="np-city" onchange="renderNPList()">
+            <option value="Київ">Київ</option>
+            <option value="Львів">Львів</option>
+            <option value="Одеса">Одеса</option>
+          </select>
+
+          <select id="np-point">
+            <option>Оберіть відділення</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Спосіб оплати</label>
+          <div class="radio-group" id="payment-group">
+            <label class="radio-opt checked">
+              <input type="radio" name="payment" value="Накладений платіж" checked>
+              <span class="rlabel">Накладений платіж (передоплата 100 ₴)</span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="payment" value="Повна передоплата">
+              <span class="rlabel">Повна передоплата</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cart-footer">
+      <div class="total-row"><span>До сплати</span><span id="checkout-total">0 ₴</span></div>
+      <button class="primary-btn" id="submit-order-btn" onclick="submitOrder()">Підтвердити замовлення</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-success">
+    <div class="success-wrap">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" width="30" height="30"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h2 class="success-title">Замовлення прийнято!</h2>
+      <p class="success-text">Дякуємо за замовлення 💜<br>Менеджер зв'яжеться з вами найближчим часом для підтвердження.</p>
+      <button class="primary-btn" onclick="backToShopping()">До покупок</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-profile">
+    <div class="header" style="padding-bottom:18px;">
+      <div class="back-row">
+        <div class="back-btn" onclick="goTo('screen-home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </div>
+        <h1 class="store-title" style="font-size:19px;">Профіль</h1>
+      </div>
+    </div>
+    <div class="form-wrap">
+      <p style="font-size:13.5px;color:var(--muted);line-height:1.6;">
+        Тут згодом з'являться: ваші замовлення, збережені книги та персональні знижки.
+      </p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyUhlNmFKN79qGSioxEF_zKUz-8tpGKSNZ3XCjuUYWuNuBD_IuBBV6hi7Da9HEvIUiA/exec";
+
+let BOOKS = [];
+let cart = JSON.parse(localStorage.getItem("bookstore_cart") || "{}");
+let activeCategory = "Усі";
+let tg = window.Telegram ? window.Telegram.WebApp : null;
+if (tg) { tg.ready(); tg.expand(); }
+
+function saveCart(){ localStorage.setItem("bookstore_cart", JSON.stringify(cart)); updateCartBadges(); }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+function goTo(screenId){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  document.querySelectorAll('.navitem').forEach(n=>n.classList.remove('active'));
+  if (screenId === 'screen-home') document.getElementById('nav-home').classList.add('active');
+  if (screenId === 'screen-cart') { document.getElementById('nav-cart').classList.add('active'); renderCart(); }
+  if (screenId === 'screen-profile') document.getElementById('nav-profile').classList.add('active');
+  if (screenId === 'screen-checkout') renderCheckoutTotal();
+  window.scrollTo(0,0);
+}
+
+/* Перетворює звичайне посилання Google Drive (.../view) на пряме посилання
+   для показу картинки. Використовує формат lh3.googleusercontent.com,
+   який набагато надійніше відображається у <img>, ніж uc?export=view
+   (той часто блокується Google і показує сторінку-заглушку замість фото).
+   Якщо посилання вже пряме (не Google Drive) — повертає як є. */
+function toDirectImageUrl(url){
+  if (!url) return "";
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m && url.includes("drive.google.com")) {
+    return `https://lh3.googleusercontent.com/d/${m[1]}=w1000`;
+  }
+  return url;
+}
+
+async function loadBooks(){
+  if (!API_URL || API_URL.includes("ВСТАВ_СЮДИ")) {
+    BOOKS = FALLBACK_BOOKS;
+    initCatalog();
+    return;
+  }  try{
+    const res = await fetch(API_URL + "?action=books");
+    const data = await res.json();
+    BOOKS = data
+      .map(b => ({
+        id: String(b.id || b.ID || b.Id),
+        name: b.name || b.Назва || "",
+        author: b.author || b.Автор || "",
+        price: Number(b.price || b.Ціна) || 0,
+        oldPrice: b.oldPrice || b["Стара ціна"] || "",
+        category: b.category || b.Категорія || "Інше",
+        cover: toDirectImageUrl(b.cover || b.Обкладинка || ""),
+        badge: b.badge || b.Бейдж || "",
+        description: b.description || b.Опис || ""
+      }))
+      .filter(b => b.name.trim() !== ""); // прибираємо порожні рядки з таблиці
+    if (!BOOKS.length) {
+      console.warn("API повернув порожній список книг — показую тестові дані");
+      BOOKS = FALLBACK_BOOKS;
+    }
+  }catch(e){
+    console.error("Не вдалося завантажити книги, показую тестові дані", e);
+    BOOKS = FALLBACK_BOOKS;
+  }
+  initCatalog();
+}
+
+function initCatalog(){
+  renderChips();
+  renderCatalog();
+  updateCartBadges();
+}
+
+function renderChips(){
+  const cats = ["Усі", ...new Set(BOOKS.map(b=>b.category))];
+  const wrap = document.getElementById('chips');
+  wrap.innerHTML = cats.map(c =>
+    `<div class="chip ${c===activeCategory?'active':''}" onclick="setCategory('${c.replace(/'/g,"\\'")}')">${c}</div>`
+  ).join('');
+}
+function setCategory(c){
+  activeCategory = c;
+  renderChips();
+  renderCatalog();
+}
+
+function renderCatalog(){
+  const q = (document.getElementById('search-input').value || "").toLowerCase();
+  let list = BOOKS.filter(b=>{
+    const matchCat = activeCategory === "Усі" || b.category === activeCategory;
+    const matchSearch = !q || b.name.toLowerCase().includes(q) || b.author.toLowerCase().includes(q);
+    return matchCat && matchSearch;
+  });
+  document.getElementById('book-count').textContent = list.length + " шт.";
+  const grid = document.getElementById('catalog-grid');
+  if (!list.length){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">Нічого не знайдено 🔎<br>Спробуйте інший запит</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(b => `
+    <div class="gcard" onclick="openDetail('${b.id}')">
+      ${b.cover ? `<img class="gcover" src="${b.cover}" alt="${b.name}" onerror="this.outerHTML='<div class=&quot;gcover-fallback&quot;><span class=&quot;cover-title&quot;>${b.name.replace(/'/g,"&#39;")}</span></div>'">`
+                 : `<div class="gcover-fallback"><span class="cover-title">${b.name}</span></div>`}
+      <div class="gbody">
+        ${b.badge ? `<span class="book-badge">${b.badge}</span>` : ``}
+        <p class="gname">${b.name}</p>
+        <p class="gauthor">${b.author}</p>
+        <div class="grow">
+          <span>
+            ${b.oldPrice ? `<span class="old-price">${b.oldPrice} ₴</span>` : ``}
+            <span class="gprice">${b.price} ₴</span>
+          </span>
+          <button class="addbtn" onclick="event.stopPropagation(); addToCart('${b.id}', 1); showToast('Додано в кошик')">+</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openDetail(id){
+  const b = BOOKS.find(x=>x.id===id);
+  if(!b) return;
+  const qty = cart[id] || 1;
+  document.getElementById('detail-content').innerHTML = `
+    <div class="back-row" style="padding:18px 18px 0;">
+      <div class="back-btn" style="background:rgba(0,0,0,0.06);border-color:var(--line);color:var(--ink);" onclick="goTo('screen-home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </div>
+    </div>
+    ${b.cover ? `<img class="detail-cover" src="${b.cover}" style="margin-top:14px;" onerror="this.outerHTML='<div class=&quot;detail-cover-fallback&quot; style=&quot;margin-top:14px;&quot;><span class=&quot;cover-title&quot;>${b.name.replace(/'/g,"&#39;")}</span></div>'">`
+               : `<div class="detail-cover-fallback" style="margin-top:14px;"><span class="cover-title">${b.name}</span></div>`}
+    <div class="detail-body">
+      <h1 class="detail-title">${b.name}</h1>
+      <p class="detail-author">${b.author} · ${b.category}</p>
+      <div class="detail-price-row">
+        ${b.oldPrice ? `<span class="old-price" style="font-size:14px;">${b.oldPrice} ₴</span>` : ``}
+        <span class="detail-price">${b.price} ₴</span>
+      </div>
+      <p class="detail-desc">${b.description || "Доставка Новою поштою по всій Україні. Накладений платіж з передоплатою 100 ₴, або повна оплата карткою."}</p>
+      <div class="qty-row">
+        <button class="qty-btn" onclick="changeDetailQty('${id}', -1)">−</button>
+        <span class="qty-val" id="detail-qty">${qty}</span>
+        <button class="qty-btn" onclick="changeDetailQty('${id}', 1)">+</button>
+      </div>
+      <button class="primary-btn" onclick="addToCart('${id}', parseInt(document.getElementById('detail-qty').textContent)); showToast('Додано в кошик'); goTo('screen-home')">Додати в кошик</button>
+    </div>
+  `;
+  goTo('screen-detail');
+}
+function changeDetailQty(id, delta){
+  const el = document.getElementById('detail-qty');
+  let v = parseInt(el.textContent) + delta;
+  if (v < 1) v = 1;
+  el.textContent = v;
+}
+
+function addToCart(id, qty){
+  cart[id] = (cart[id] || 0) + qty;
+  saveCart();
+}
+function removeFromCart(id){
+  delete cart[id];
+  saveCart();
+  renderCart();
+}
+function changeCartQty(id, delta){
+  cart[id] = (cart[id] || 0) + delta;
+  if (cart[id] <= 0) delete cart[id];
+  saveCart();
+  renderCart();
+}
+function cartCount(){
+  return Object.values(cart).reduce((a,b)=>a+b, 0);
+}
+function cartTotal(){
+  return Object.entries(cart).reduce((sum,[id,qty])=>{
+    const b = BOOKS.find(x=>x.id===id);
+    return sum + (b ? b.price*qty : 0);
+  }, 0);
+}
+function updateCartBadges(){
+  const n = cartCount();
+  document.getElementById('cart-pill-count').textContent = n;
+  const badge = document.getElementById('nav-cart-badge');
+  badge.textContent = n;
+  badge.style.display = n>0 ? 'flex' : 'none';
+  badge.textContent = n;
+}
+
+function renderCart(){
+  const ids = Object.keys(cart);
+  const list = document.getElementById('cart-list');
+  const footer = document.getElementById('cart-footer');
+  if (!ids.length){
+    list.innerHTML = `<div class="empty-state">Кошик порожній 🛒<br>Додайте книги з каталогу</div>`;
+    footer.style.display = 'none';
+    return;
+  }
+  footer.style.display = 'block';
+  list.innerHTML = ids.map(id=>{
+    const b = BOOKS.find(x=>x.id===id);
+    if (!b) return '';
+    const qty = cart[id];
+    return `
+      <div class="cart-item">
+        ${b.cover ? `<img src="${b.cover}" onerror="this.outerHTML='<div class=&quot;cart-item-fallback&quot;><span>${b.name.replace(/'/g,"&#39;")}</span></div>'">` : `<div class="cart-item-fallback"><span>${b.name}</span></div>`}
+        <div class="ci-info">
+          <p class="ci-name">${b.name}</p>
+          <p class="ci-author">${b.author}</p>
+          <div class="ci-row">
+            <div class="ci-qty">
+              <button onclick="changeCartQty('${id}', -1)">−</button>
+              <span>${qty}</span>
+              <button onclick="changeCartQty('${id}', 1)">+</button>
+            </div>
+            <span class="ci-price">${b.price*qty} ₴</span>
+          </div>
+          <button class="ci-remove" onclick="removeFromCart('${id}')">Видалити</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('cart-total').textContent = cartTotal() + " ₴";
+}
+
+function renderCheckoutTotal(){
+  document.getElementById('checkout-total').textContent = cartTotal() + " ₴";
+}
+
+document.addEventListener('change', e=>{
+  if (e.target.name === 'payment'){
+    document.querySelectorAll('.radio-opt').forEach(o=>o.classList.remove('checked'));
+    e.target.closest('.radio-opt').classList.add('checked');
+  }
+});
+
+
+const NP_POINTS = {
+  "Київ":{
+    branch:[
+      "Відділення №1 — вул. Хрещатик, 1",
+      "Відділення №25 — вул. Бальзака, 12",
+      "Відділення №50 — просп. Бажана, 5"
+    ],
+    locker:[
+      "Поштомат №101 — ТЦ River Mall",
+      "Поштомат №205 — вул. Милославська, 10"
+    ]
+  },
+  "Львів":{
+    branch:[
+      "Відділення №3 — вул. Городоцька, 20",
+      "Відділення №15 — вул. Стрийська, 45"
+    ],
+    locker:[
+      "Поштомат №50 — Forum Lviv",
+      "Поштомат №71 — вул. Наукова"
+    ]
+  },
+  "Одеса":{
+    branch:[
+      "Відділення №7 — вул. Дерибасівська, 12"
+    ],
+    locker:[
+      "Поштомат №33 — ТЦ City Center"
+    ]
+  }
+};
+
+function renderNPList(){
+  const city = document.getElementById("np-city").value;
+  const type = document.getElementById("np-type").value;
+  const select = document.getElementById("np-point");
+
+  select.innerHTML = NP_POINTS[city][type]
+    .map(x => `<option>${x}</option>`)
+    .join('');
+}
+
+renderNPList();
+
+async function submitOrder(){
+  const name = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const address = document.getElementById('np-point').value;
+  const payment = document.querySelector('input[name=payment]:checked').value;
+
+  if (!name || !phone || !address){
+    showToast('Заповніть усі поля');
+    return;
+  }
+
+  const items = Object.entries(cart).map(([id,qty])=>{
+    const b = BOOKS.find(x=>x.id===id);
+    return { id, name: b ? b.name : id, price: b ? b.price : 0, qty };
+  });
+  const total = cartTotal();
+  const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user
+    ? (tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name)
+    : "";
+
+  const order = { name, phone, address, payment, items, total, telegram: tgUser, date: new Date().toISOString() };
+
+  const btn = document.getElementById('submit-order-btn');
+  btn.disabled = true;
+  btn.textContent = "Надсилаємо…";
+
+  try{
+    if (API_URL && !API_URL.includes("ВСТАВ_СЮДИ")){
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "order", ...order })
+      });
+    } else {
+      console.log("ДЕМО-режим, замовлення не відправлено на сервер:", order);
+    }
+    cart = {};
+    saveCart();
+    goTo('screen-success');
+  }catch(e){
+    console.error(e);
+    showToast('Помилка. Спробуйте ще раз');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Підтвердити замовлення";
+  }
+}
+
+function backToShopping(){
+  goTo('screen-home');
+}
+
+loadBooks();
+</script>
+
+</body>
+</html>
