@@ -184,12 +184,10 @@
   /* ── BADGE ── */
   .gcard-img{position:relative;}
   .gbadge{
-    position:absolute;top:8px;left:8px;
     background:var(--c-badge-bg);color:var(--c-badge-text);
     font-size:10px;font-weight:700;letter-spacing:.04em;
     padding:3px 8px;border-radius:999px;
     text-transform:uppercase;pointer-events:none;
-    box-shadow:0 2px 6px rgba(0,0,0,.2);
   }
   /* badge on detail page */
   .detail-badge{
@@ -1058,7 +1056,6 @@ function bookCardHtml(b){
         ${b.cover
           ? `<img class="gcover" src="${b.cover}" alt="${b.name}" onerror="this.outerHTML='<div class=&quot;gcover-fallback&quot;><span class=&quot;cover-title&quot;>${b.name.replace(/'/g,"&#39;")}</span></div>'">`
           : `<div class="gcover-fallback"><span class="cover-title">${b.name}</span></div>`}
-        ${b.badge?`<span class="gbadge">${b.badge}</span>`:''}
         <button class="heart-btn ${fav?'active':''}" onclick="event.stopPropagation();toggleFavorite('${b.id}')" title="До обраного">
           <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
         </button>
@@ -1067,6 +1064,7 @@ function bookCardHtml(b){
         <p class="gname">${b.name}</p>
         <p class="gauthor">${b.author}</p>
         <p class="gavail ${inStock?'yes':'no'}">${inStock?'В наявності':'Немає в наявності'}</p>
+        ${b.badge?`<span class="gbadge">${b.badge}</span>`:''}
         <div class="grow">
           <span>
             ${b.oldPrice?`<span class="old-price">${b.oldPrice} ₴</span>`:''}
