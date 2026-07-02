@@ -1196,7 +1196,7 @@ function matchesFilters(b){
   if(filters.language.length && !filters.language.includes(b.language)) return false;
   if(filters.publisher.length && !filters.publisher.includes(b.publisher)) return false;
   if(filters.badge.length && !filters.badge.includes(b.badge)) return false;
-  // "Зі знижкою" враховує ЛИШЕ реальну стару ціну, а не будь-який бейдж
+  // "Зі знижкою" враховує ЛИШЕ реальну стару ціну, а не будь-який статус
   // (щоб "Хіт продажів" не потрапляв у фільтр акцій)
   if(filters.onlyPromo && !b.oldPrice) return false;
   if(filters.onlyStock && !(b.stock>0)) return false;
@@ -1427,9 +1427,9 @@ const COLOR_SETTINGS = [
     {v:'--c-sale-price', label:'Колір ціни зі знижкою / акції', def:'#c0392b'},
     {v:'--c-oldprice', label:'Колір закресленої старої ціни', def:'#8a7d63'},
   ]},
-  {group:'Бейджі та кнопки', items:[
-    {v:'--c-badge-bg', label:'Фон бейджа (акція, новинка)', def:'#7a2630'},
-    {v:'--c-badge-text', label:'Текст бейджа', def:'#ffffff'},
+  {group:'Статуси та кнопки', items:[
+    {v:'--c-badge-bg', label:'Фон статуса (акція, новинка)', def:'#7a2630'},
+    {v:'--c-badge-text', label:'Текст статуса', def:'#ffffff'},
     {v:'--c-addbtn-bg', label:'Фон кнопки "До кошика"', def:'#7a2630'},
     {v:'--c-addbtn-text', label:'Текст кнопки "До кошика"', def:'#ffffff'},
   ]},
