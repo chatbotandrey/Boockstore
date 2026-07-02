@@ -1052,7 +1052,7 @@ async function loadBooks(){
         author: b.author||b.Автор||"",
         price: Number(b.price||b.Ціна)||0,
         oldPrice: b.oldPrice||b["Стара ціна"]||"",
-        category: b.category||b.Категорія||"Інше",
+        category: b.category||b.Жанр||"Інше",
         cover: toDirectImageUrl(b.cover||b.Обкладинка||""),
         badge: b.badge||b.Бейдж||"",
         description: b.description||b.Опис||"",
@@ -1164,7 +1164,7 @@ function availToggleBodyHtml(){
       </label>
     </div>
     <div class="filter-toggle-row">
-      <span class="rlabel">Лише зі знижкою (є стара ціна)</span>
+      <span class="rlabel">Лише зі знижкою</span>
       <label class="switch">
         <input type="checkbox" ${draftFilters.onlyPromo?'checked':''} onchange="draftFilters.onlyPromo=this.checked;renderFilterBody();">
         <span class="switch-slider"></span>
