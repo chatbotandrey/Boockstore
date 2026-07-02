@@ -37,7 +37,16 @@
     --c-cardbg:#e6dbd1;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;background:#d8cdb4;}
+  html, body {
+  margin: 0;
+  padding: 0;
+  background-image: url('https://google.com');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
   body{font-family:'Inter',sans-serif;color:var(--ink);display:flex;justify-content:center;}
   button{font-family:inherit;}
 
@@ -447,7 +456,7 @@
     .grid{grid-template-columns:repeat(3,1fr);gap:18px;padding:0 28px 28px;}
     .gcover,.gcover-fallback{height:170px;}
 
-    .header{padding:100px 28px 50px;}
+    .header{padding:100px 28px 30px;}
     .store-title{font-size:28px;}
     .search-wrap{padding:18px 28px 0;}
     .chips{padding:14px 28px 6px;}
