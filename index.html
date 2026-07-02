@@ -1054,7 +1054,7 @@ async function loadBooks(){
         oldPrice: b.oldPrice||b["Стара ціна"]||"",
         category: b.category||b.Жанр||"Інше",
         cover: toDirectImageUrl(b.cover||b.Обкладинка||""),
-        badge: b.badge||b.Бейдж||"",
+        badge: b.badge||b.Статус||"",
         description: b.description||b.Опис||"",
         stock: Number(b.stock!==undefined?b.stock:(b.Наявність!==undefined?b.Наявність:0))||0,
         genre: b.genre||b.Жанр||"",
