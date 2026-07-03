@@ -589,8 +589,8 @@
         <div class="pg-size-row">
           <label for="pg-size-select">Показувати по:</label>
           <select id="pg-size-select" onchange="changePageSize(this.value)">
-            <option value="8">8</option>
-            <option value="12" selected>12</option>
+            <option value="8" selected>8</option>
+            <option value="12">12</option>
             <option value="24">24</option>
             <option value="48">48</option>
           </select>
@@ -1272,7 +1272,7 @@ function bookCardHtml(b){
   `;
 }
 
-let pageSize = 12;
+let pageSize = 8;
 let currentPage = 1;
 
 function changePageSize(val){
